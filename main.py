@@ -162,40 +162,50 @@ def spreadout():
     technology()
 
 
-def lowerupper(column):
-    Q1 = data[column].quantile(0.25)
-    Q3 = data[column].quantile(0.75)
+def lowerupper(column, given_data):
+    Q1 = given_data[column].quantile(0.25)
+    Q3 = given_data[column].quantile(0.75)
     IQR = Q3 - Q1 # diff between lowest 25% and top 75%
 
     upper_limit = Q3 + 1.5 * IQR  # multiply that difference by 1.5 and add to the upper limit
     lower_limit = Q1 - 1.5 * IQR  # same for low limit, but substract instead
     return lower_limit, upper_limit
 
+def printoutliers(column, given_data=data):
+    lower_limit, upper_limit = lowerupper(column, given_data)
+    outliers_c = given_data[column][given_data[column] < lower_limit].count()
+    outliers_c += given_data[column][given_data[column] > upper_limit].count()
+    print("Odlehle hodnoty u " + column + ":" ,outliers_c)
+
+def print_edit_data(column, func):
+    tmp = data
+    tmp[column] = tmp[column].apply(func) # convert to int
+    tmp = tmp[tmp[column] != -42] # remove invalid values
+    print(tmp[column].describe())
+    print(tmp[column].median())
+    printoutliers(column, given_data=tmp)
+
 def outliers():
+    printoutliers("Age")
+    printoutliers("Yearly brutto salary (without bonus and stocks) in EUR")
+    printoutliers("Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country")
+    printoutliers("Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week")
+    
+        
+    ## look numerical, arent really -- need to convert them  first
 
-    lower_limit, upper_limit = lowerupper('Age')
-    outliers_c = data['Age'][data['Age'] < lower_limit].count()
-    outliers_c += data['Age'][data['Age'] > upper_limit].count()
-    print("Odlehle hodnoty u veku:" ,outliers_c)
+    def tryInt(x):
+        try:
+            x = int(x)
+        except:
+            x = -42 # random value
+        return x
 
-    lower_limit, upper_limit = lowerupper('Yearly brutto salary (without bonus and stocks) in EUR')
-    outliers_c = data['Yearly brutto salary (without bonus and stocks) in EUR'][data['Yearly brutto salary (without bonus and stocks) in EUR'] < lower_limit].count()
-    outliers_c += data['Yearly brutto salary (without bonus and stocks) in EUR'][data['Yearly brutto salary (without bonus and stocks) in EUR'] > upper_limit].count()
-    print("Odlehle hodnoty u platu:" ,outliers_c)
-
-    lower_limit, upper_limit = lowerupper('Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country')
-    outliers_c = data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country']\
-        [data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country'] < lower_limit].count()
-    outliers_c += data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country']\
-        [data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country'] > upper_limit].count()
-    print("Odlehle hodnoty u platu pred rokem:" ,outliers_c)
-
-    lower_limit, upper_limit = lowerupper('Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week')
-    outliers_c = data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week']\
-        [data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week'] < lower_limit].count()
-    outliers_c += data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week']\
-        [data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week'] > upper_limit].count()
-    print("Odlehle hodnoty u kurzarbeitu:" ,outliers_c)
+    print_edit_data('Total years of experience', tryInt)
+    print_edit_data('Years of experience in Germany', tryInt)
+    print_edit_data('Yearly bonus + stocks in EUR', tryInt)
+    print_edit_data('Annual bonus+stocks one year ago. Only answer if staying in same country', tryInt)
+    print_edit_data('Number of vacation days', tryInt)
 
 def missing():
     neccesary_data = data
@@ -213,16 +223,79 @@ def missing():
     	
     print(neccesary_data.isna().sum())
 
+def prep_corr(attr1, attr2):
+    def tryInt(x):
+        try:
+            x = int(x)
+        except:
+            x = -42 # random value
+        return x
+    tmp = data
+    tmp[attr1] = tmp[attr1].apply(tryInt)
+    tmp = tmp[tmp[attr1] != -42] # remove invalid values
+    tmp[attr2] = tmp[attr2].apply(tryInt)
+    tmp = tmp[tmp[attr2] != -42] # remove invalid values
+
+    print(attr1 + ",",attr2,(tmp[attr1].corr(tmp[attr2])))
+
+
 def correlate():
-    print("Korelace mezi vekem a platem", data['Age'].corr(data['Yearly brutto salary (without bonus and stocks) in EUR']))
-    print("Korelace mezi vekem a platem pred rokem",data['Age'].corr(data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country']))
-    print("Korelace mezi vekem a kurzarbeitem",data['Age'].corr(data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week']))
+    age = 'Age'
+    yearlypay = 'Yearly brutto salary (without bonus and stocks) in EUR'
+    yearlyyearago = 'Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country'
+    totexp = 'Total years of experience'
+    germexp = 'Years of experience in Germany'
+    kurzarbeit = 'Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week'
+    yearlybonus = 'Yearly bonus + stocks in EUR'
+    yearlybonusyearback = 'Annual bonus+stocks one year ago. Only answer if staying in same country'
+    vacation = 'Number of vacation days'
+    prep_corr(age, yearlypay)
+    prep_corr(age, yearlyyearago)
+    prep_corr(age, kurzarbeit)
 
-    print("Korelace mezi platem a kurzarbeitem", data['Yearly brutto salary (without bonus and stocks) in EUR'].corr(data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week']))
-    print("Korelace mezi platem a platem pred rokem", data['Yearly brutto salary (without bonus and stocks) in EUR'].corr(data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country']))
-    
-    print("Korelace mezi platem pred rokem a kurzarbeitem", data['Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country'].corr(data['Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week']))
+    prep_corr(yearlypay, yearlyyearago)
+    prep_corr(yearlypay, kurzarbeit)
 
+    prep_corr(yearlyyearago, kurzarbeit)
+
+
+    prep_corr(age, totexp)
+    prep_corr(age, germexp)
+    prep_corr(age, yearlybonus)
+    prep_corr(age, yearlybonusyearback)
+    prep_corr(age, vacation)
+
+    prep_corr(yearlypay, totexp)
+    prep_corr(yearlypay, germexp)
+    prep_corr(yearlypay, yearlybonus)
+    prep_corr(yearlypay, yearlybonusyearback)
+    prep_corr(yearlypay, vacation)
+
+    prep_corr(yearlyyearago, totexp)
+    prep_corr(yearlyyearago, germexp)
+    prep_corr(yearlyyearago, yearlybonus)
+    prep_corr(yearlyyearago, yearlybonusyearback)
+    prep_corr(yearlyyearago, vacation)
+
+    prep_corr(kurzarbeit, totexp)
+    prep_corr(kurzarbeit, germexp)
+    prep_corr(kurzarbeit, yearlybonus)
+    prep_corr(kurzarbeit, yearlybonusyearback)
+    prep_corr(kurzarbeit, vacation)
+
+    prep_corr(totexp, germexp)
+    prep_corr(totexp, yearlybonus)
+    prep_corr(totexp, yearlybonusyearback)
+    prep_corr(totexp, vacation)
+
+    prep_corr(germexp, yearlybonus)
+    prep_corr(germexp, yearlybonusyearback)
+    prep_corr(germexp, vacation)
+
+    prep_corr(yearlybonus, yearlybonusyearback)
+    prep_corr(yearlybonus, vacation)
+
+    prep_corr(yearlybonusyearback, vacation)
 
 #printValues()  # Prozkoumani atributu
 #spreadout()    # Grafy
