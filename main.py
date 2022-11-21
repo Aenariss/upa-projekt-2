@@ -6,7 +6,6 @@ from pandas import DataFrame
 
 data = pd.read_csv('./IT_Salary_Survey_EU _2020.csv').drop_duplicates()
 
-
 def printValues():
     print("Pohlavi:\n", data["Gender"].describe())
     print("Vek:\n", data["Age"].describe())
@@ -348,6 +347,17 @@ def remove_unrelated_attributes():
 
     data_filled.to_csv("filtered_swaped_filled.csv", index=True)
 
+    data_outlier = outliers(data_filled)
+
+    data_outlier.to_csv("data_outlier.csv", index=True)
+
+    data_discretization = discretization(data_outlier)
+
+    data_discretization.to_csv("data_disc.csv", index=True)
+
+    data_categories = transform_categories(data_outlier)
+
+    data_categories.to_csv("data_category.csv", index=True)
 
     # differences
     pd.concat([data_filled, data_filtered]).drop_duplicates(keep=False)
@@ -362,6 +372,37 @@ def handle_missing_values(df:DataFrame) -> DataFrame:
     df.fillna("undefined", inplace=True)
     return df
 
+def outliers(df:DataFrame) -> DataFrame:
+    cols = ["Age","Yearly brutto salary (without bonus and stocks) in EUR",\
+            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country",\
+            "Total years of experience","Years of experience in Germany"]
+    for x in cols:
+        q_low = df[x].quantile(0.01)
+        q_hi  = df[x].quantile(0.99)
+        df = df[(df[x] < q_hi) & (df[x] > q_low)]
+    return df
+
+def discretization(df:DataFrame) -> DataFrame:
+    cols = ["Age","Yearly brutto salary (without bonus and stocks) in EUR",\
+            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country",\
+            "Total years of experience","Years of experience in Germany"]
+    for x in cols:
+        high = np.amax(df[x])
+        low = np.amin(df[x])
+        bins = np.array_split(np.arange(low,high),5)
+        bins = [x[0]-0.01 for x in bins] + [high]
+        df[x]=pd.cut(x=df[x], bins=bins, 
+                                labels=["very low", "low", "medium","high","very high"])
+    return df
+
+def transform_categories(df:DataFrame) -> DataFrame:
+    df["Company size"].str.strip()
+    df["Company size"] = df["Company size"].str.replace("up to 10","very small")
+    df["Company size"] = df["Company size"].str.replace("11-50","small")
+    df["Company size"] = df["Company size"].str.replace("51-100","medium")
+    df["Company size"] = df["Company size"].str.replace("101-1000","large")
+    df["Company size"] = df["Company size"].str.replace("1000+","very large", regex=False)
+    return df
 
 if __name__ == "__main__":
     remove_unrelated_attributes()
