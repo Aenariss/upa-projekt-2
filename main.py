@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pandas import DataFrame
+from fuzzywuzzy import process, fuzz
 
 data = pd.read_csv('./IT_Salary_Survey_EU _2020.csv').drop_duplicates()
 
@@ -332,6 +333,7 @@ def swap_columns(df, col1, col2):
     col_list[y], col_list[x] = col_list[x], col_list[y]
     df = df[col_list]
     return df
+
 def remove_unrelated_attributes():
     data_filtered = data.drop(columns=["Timestamp", \
                                        "Yearly bonus + stocks in EUR", \
@@ -359,8 +361,9 @@ def remove_unrelated_attributes():
 
     data_categories.to_csv("data_category.csv", index=True)
 
-    # differences
-    pd.concat([data_filled, data_filtered]).drop_duplicates(keep=False)
+    data_positions = handle_position_strings(data_categories)
+
+    data_positions.to_csv("data_positions.csv", index=True)
 
 
 def handle_missing_values(df:DataFrame) -> DataFrame:
@@ -378,7 +381,7 @@ def outliers(df:DataFrame) -> DataFrame:
             "Total years of experience","Years of experience in Germany"]
     for x in cols:
         q_low = df[x].quantile(0.01)
-        q_hi  = df[x].quantile(0.99)
+        q_hi = df[x].quantile(0.99)
         df = df[(df[x] < q_hi) & (df[x] > q_low)]
     return df
 
@@ -403,6 +406,25 @@ def transform_categories(df:DataFrame) -> DataFrame:
     df["Company size"] = df["Company size"].str.replace("101-1000","large")
     df["Company size"] = df["Company size"].str.replace("1000+","very large", regex=False)
     return df
+
+def handle_position_strings(df: DataFrame) -> DataFrame:
+    positions = ["Senior", "Junior", "Freelancer", "engineer", "undefined", "Frontend", "Backend", "Manager",
+                 "Consultant", "Data analyst", "developer"]
+    new_col = []
+    for value in df["Position "]:
+        value = str(value)
+        if value:
+            matches = process.extract(value, positions, scorer=fuzz.token_sort_ratio)
+            match_r = matches[0][1]
+            if match_r < 50:
+                value = "undefined"
+            else:
+                value = matches[0][0]
+            new_col.append(value)
+
+    df["Position "] = new_col
+    return df
+
 
 if __name__ == "__main__":
     remove_unrelated_attributes()
