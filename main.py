@@ -343,8 +343,9 @@ def remove_unrelated_attributes() -> DataFrame:
                                        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week", \
                                        "Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR"])
     data_filtered = swap_columns(data_filtered, "Age", "Yearly brutto salary (without bonus and stocks) in EUR")
-    #data_filtered.to_csv("filtered_swaped.csv", index=True)
+    # data_filtered.to_csv("filtered_swaped.csv", index=True)
     return data_filtered
+
 
 def handle_missing_values(df: DataFrame) -> DataFrame:
     # Convert DataFrame column from string to float
@@ -375,22 +376,23 @@ def discretization(df: DataFrame) -> DataFrame:
         bins = np.array_split(np.arange(low, high), 5)
         bins = [x[0] - 0.01 for x in bins] + [high]
         df[x] = pd.cut(x=df[x], bins=bins,
-                       labels=["very low", "low", "medium", "high", "very high"])
+                       labels=["low", "moderate", "medium", "high", "big"])
     return df
 
 
 def transform_categories(df: DataFrame) -> DataFrame:
     df["Company size"].str.strip()
-    df["Company size"] = df["Company size"].str.replace("up to 10", "very small")
+    df["Company size"] = df["Company size"].str.replace("up to 10", "tiny")
     df["Company size"] = df["Company size"].str.replace("11-50", "small")
     df["Company size"] = df["Company size"].str.replace("51-100", "medium")
     df["Company size"] = df["Company size"].str.replace("101-1000", "large")
-    df["Company size"] = df["Company size"].str.replace("1000+", "very large", regex=False)
+    df["Company size"] = df["Company size"].str.replace("1000+", "big", regex=False)
     return df
 
 
 def handle_company_type(df: DataFrame) -> DataFrame:
-    types = ["undefined", "startup", "Product", "media", "consulting", "commercial", "construction", "university", "ecommerce", "research"]
+    types = ["undefined", "startup", "Product", "media", "consulting", "commercial", "construction", "university",
+             "ecommerce", "research"]
     new_col = []
     for value in df["Company type"]:
         value = str(value)
@@ -439,6 +441,7 @@ def hande_contract_duration(df: DataFrame) -> DataFrame:
     df["Сontract duration"] = new_col
     return df
 
+
 def handle_position_strings(df: DataFrame) -> DataFrame:
     positions = ["Senior", "Junior", "Freelancer", "engineer", "undefined", "Frontend", "Backend", "Manager",
                  "Consultant", "Data analyst", "developer"]
@@ -457,12 +460,18 @@ def handle_position_strings(df: DataFrame) -> DataFrame:
     df["Position "] = new_col
     return df
 
+
 def handle_technologies_strings(df: DataFrame, col) -> DataFrame:
-    technology = {"Frontend" : "frontend","TypeScript" : "frontend","JavaScript" : "frontend","JS" : "frontend","Angular" : "frontend","React" : "frontend","NodeJS" : "frontend","Figma" : "frontend",\
-                "Cloud": "cloud", "AWS": "cloud", "GCP": "cloud", "Kubernetes": "cloud", "K8s": "cloud", "Azure": "cloud", "Docker": "cloud",\
-                "Backend" : "backend","Ruby" : "backend",".NET" : "backend","Python" : "backend","Go" : "backend","Scala" : "backend",\
-                "SQL" : "backend","Java" : "backend","Scala" : "backend","C++" : "backend","C#" : "backend","PHP" : "backend",\
-                "SAP":"sap","ABAP":"sap","ML":"ml","R":"ml","Android":"mobile","Kotlin":"mobile","iOS":"mobile","Swift":"mobile"}
+    technology = {"Frontend": "frontend", "TypeScript": "frontend", "JavaScript": "frontend", "JS": "frontend",
+                  "Angular": "frontend", "React": "frontend", "NodeJS": "frontend", "Figma": "frontend", \
+                  "Cloud": "cloud", "AWS": "cloud", "GCP": "cloud", "Kubernetes": "cloud", "K8s": "cloud",
+                  "Azure": "cloud", "Docker": "cloud", \
+                  "Backend": "backend", "Ruby": "backend", ".NET": "backend", "Python": "backend", "Go": "backend",
+                  "Scala": "backend", \
+                  "SQL": "backend", "Java": "backend", "Scala": "backend", "C++": "backend", "C#": "backend",
+                  "PHP": "backend", \
+                  "SAP": "sap", "ABAP": "sap", "ML": "ml", "R": "ml", "Android": "mobile", "Kotlin": "mobile",
+                  "iOS": "mobile", "Swift": "mobile"}
     new_col = []
     for value in df[col]:
         value = str(value)
@@ -478,6 +487,7 @@ def handle_technologies_strings(df: DataFrame, col) -> DataFrame:
     df[col] = new_col
     return df
 
+
 def prepare_data_set() -> DataFrame:
     output = remove_unrelated_attributes()
 
@@ -485,39 +495,40 @@ def prepare_data_set() -> DataFrame:
 
     data_outlier = outliers(data_filled)
 
-    #data_outlier.to_csv("data_outlier.csv", index=True)
+    # data_outlier.to_csv("data_outlier.csv", index=True)
 
     data_discretization = discretization(data_outlier)
 
-    #data_discretization.to_csv("data_disc.csv", index=True)
+    # data_discretization.to_csv("data_disc.csv", index=True)
 
     data_categories = transform_categories(data_outlier)
 
-    #data_categories.to_csv("data_category.csv", index=True)
+    # data_categories.to_csv("data_category.csv", index=True)
 
     data_positions = handle_position_strings(data_categories)
 
-    #data_positions.to_csv("data_positions.csv", index=True)
+    # data_positions.to_csv("data_positions.csv", index=True)
 
     data_employment = hande_employment_status(data_positions)
 
-    #data_employment.to_csv("data_employment.csv", index=True)
+    # data_employment.to_csv("data_employment.csv", index=True)
 
     data_contracts = hande_contract_duration(data_employment)
 
-    #data_contracts.to_csv("data_contracts.csv", index=True)
+    # data_contracts.to_csv("data_contracts.csv", index=True)
 
     data_companies = handle_company_type(data_contracts)
 
-    #data_companies.to_csv("data_companies.csv", index=True)
+    # data_companies.to_csv("data_companies.csv", index=True)
 
-    data_technologies = handle_technologies_strings(data_companies,"Your main technology / programming language")
+    data_technologies = handle_technologies_strings(data_companies, "Your main technology / programming language")
 
-    #data_technologies.to_csv("data_technologies.csv", index=True)
+    # data_technologies.to_csv("data_technologies.csv", index=True)
 
-    data_other_technologies = handle_technologies_strings(data_technologies,"Other technologies/programming languages you use often")
+    data_other_technologies = handle_technologies_strings(data_technologies,
+                                                          "Other technologies/programming languages you use often")
 
-    #data_other_technologies.to_csv("data_other_technologies.csv", index=True)
+    # data_other_technologies.to_csv("data_other_technologies.csv", index=True)
 
     final_output = data_other_technologies
     final_output.to_csv("output.csv", index=True)
@@ -525,7 +536,21 @@ def prepare_data_set() -> DataFrame:
     return final_output
 
 
+def categorization_data_transformation(df: DataFrame) -> DataFrame:
+    for column in df:
+        unique_values = df[column].unique()
+        for v, k in enumerate(unique_values):
+            if type(k) is str:
+                if k == "undefinded":
+                    v = "-1"
+
+                df[column] = df[column].str.replace(k, str(v), regex=False)
+
+    return df
+
+
 if __name__ == "__main__":
-    prepare_data_set()
+    df = prepare_data_set()
+    df = categorization_data_transformation(df)
 
-
+    df.to_csv("categorized.csv", index=True)
