@@ -365,6 +365,14 @@ def remove_unrelated_attributes():
 
     data_positions.to_csv("data_positions.csv", index=True)
 
+    data_technologies = handle_technologies_strings(data_categories,"Your main technology / programming language")
+
+    data_technologies.to_csv("data_technologies.csv", index=True)
+
+    data_other_technologies = handle_technologies_strings(data_technologies,"Other technologies/programming languages you use often")
+
+    data_other_technologies.to_csv("data_other_technologies.csv", index=True)
+
 
 def handle_missing_values(df:DataFrame) -> DataFrame:
 
@@ -425,6 +433,26 @@ def handle_position_strings(df: DataFrame) -> DataFrame:
     df["Position "] = new_col
     return df
 
+def handle_technologies_strings(df: DataFrame, col) -> DataFrame:
+    technology = {"Frontend" : "frontend","TypeScript" : "frontend","JavaScript" : "frontend","JS" : "frontend","Angular" : "frontend","React" : "frontend","NodeJS" : "frontend","Figma" : "frontend",\
+                "Cloud": "cloud", "AWS": "cloud", "GCP": "cloud", "Kubernetes": "cloud", "K8s": "cloud", "Azure": "cloud", "Docker": "cloud",\
+                "Backend" : "backend","Ruby" : "backend",".NET" : "backend","Python" : "backend","Go" : "backend","Scala" : "backend",\
+                "SQL" : "backend","Java" : "backend","Scala" : "backend","C++" : "backend","C#" : "backend","PHP" : "backend",\
+                "SAP":"sap","ABAP":"sap","ML":"ml","R":"ml","Android":"mobile","Kotlin":"mobile","iOS":"mobile","Swift":"mobile"}
+    new_col = []
+    for value in df[col]:
+        value = str(value)
+        if value:
+            matches = process.extract(value, technology.keys(), scorer=fuzz.token_sort_ratio)
+            match_r = matches[0][1]
+            if match_r < 50:
+                value = "undefined"
+            else:
+                value = technology.get(matches[0][0])
+            new_col.append(value)
+
+    df[col] = new_col
+    return df
 
 if __name__ == "__main__":
     remove_unrelated_attributes()
