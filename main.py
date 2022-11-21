@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pandas import DataFrame
 
 data = pd.read_csv('./IT_Salary_Survey_EU _2020.csv').drop_duplicates()
+
 
 def printValues():
     print("Pohlavi:\n", data["Gender"].describe())
@@ -17,9 +19,12 @@ def printValues():
     print("Rocni brutto plat:\n", data["Yearly brutto salary (without bonus and stocks) in EUR"].describe())
     print("Rocni brutto plat:\n", data["Yearly brutto salary (without bonus and stocks) in EUR"].median())
     print("Rocni bonusy:\n", data["Yearly bonus + stocks in EUR"].describe())
-    print("Plat pred rokem:\n", data["Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"].describe())
-    print("Plat pred rokem:\n", data["Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"].median())
-    print("Bonusy pred rokem:\n", data["Annual bonus+stocks one year ago. Only answer if staying in same country"].describe())
+    print("Plat pred rokem:\n", data[
+        "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"].describe())
+    print("Plat pred rokem:\n", data[
+        "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"].median())
+    print("Bonusy pred rokem:\n",
+          data["Annual bonus+stocks one year ago. Only answer if staying in same country"].describe())
     print("Dovolena:\n", data["Number of vacation days"].describe())
     print("Typ uvazku:\n", data["Employment status"].describe())
     print("Doba uvazku:\n", data["Сontract duration"].describe())
@@ -27,27 +32,33 @@ def printValues():
     print("Velikost firmy:\n", data["Company size"].describe())
     print("Typ firmy:\n", data["Company type"].describe())
     print("Ztratily praci kvuli covidu?\n", data["Have you lost your job due to the coronavirus outbreak?"].describe())
-    print("Kurzarbeit?:\n", data["Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week"].describe())
-    print("Kurzarbeit?:\n", data["Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week"].median())
-    print("covid bonusy?:\n", data["Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR"].describe())
+    print("Kurzarbeit?:\n", data[
+        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week"].describe())
+    print("Kurzarbeit?:\n", data[
+        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week"].median())
+    print("covid bonusy?:\n", data[
+        "Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR"].describe())
+
 
 def piegender():
     # Pohlavi
-    data['Gender'].value_counts().plot.pie(autopct="%1.1f%%",fontsize=12,startangle=90, explode=[0.02] * 3, pctdistance=1.2, labeldistance=1.4)
+    data['Gender'].value_counts().plot.pie(autopct="%1.1f%%", fontsize=12, startangle=90, explode=[0.02] * 3,
+                                           pctdistance=1.2, labeldistance=1.4)
     plt.ylabel("")
     plt.savefig('piegender.png')
 
-def pay():
 
+def pay():
     # Need to remove the outlier data cuz they do be scuffed
     p01 = data['Yearly brutto salary (without bonus and stocks) in EUR'].quantile(0.1)
     p09 = data['Yearly brutto salary (without bonus and stocks) in EUR'].quantile(0.9)
-    diff = p09 - p01 # diff between lowest 10% and top 90%
+    diff = p09 - p01  # diff between lowest 10% and top 90%
 
     upper_limit = p09 + 1.5 * diff  # multiply that difference by 1.5 and add to the upper limit
     lower_limit = p01 - 1.5 * diff  # same for low limit, but substract instead
 
-    paydata = data[(data['Yearly brutto salary (without bonus and stocks) in EUR'] > lower_limit) & (data['Yearly brutto salary (without bonus and stocks) in EUR'] < upper_limit)]
+    paydata = data[(data['Yearly brutto salary (without bonus and stocks) in EUR'] > lower_limit) & (
+                data['Yearly brutto salary (without bonus and stocks) in EUR'] < upper_limit)]
     plt.hist(paydata['Yearly brutto salary (without bonus and stocks) in EUR'], bins=20, rwidth=0.9)
     plt.xlabel('Yearly brutto salary (without bonuses) in EUR')
     plt.ylabel("Number of responses")
@@ -77,10 +88,10 @@ def pay():
         return x
 
     paydata['Age'] = paydata['Age'].apply(lambda_interval)
-    plt.figure(figsize=(15,8)) 
-    #sns.histplot(x='Yearly brutto salary (without bonus and stocks) in EUR', data=paydata,
+    plt.figure(figsize=(15, 8))
+    # sns.histplot(x='Yearly brutto salary (without bonus and stocks) in EUR', data=paydata,
     #            bins=20, hue='Age',multiple="stack")
-    sns.boxplot(x='Age',y='Yearly brutto salary (without bonus and stocks) in EUR',data=paydata)
+    sns.boxplot(x='Age', y='Yearly brutto salary (without bonus and stocks) in EUR', data=paydata)
     plt.xlabel("Age")
     plt.ylabel("Yearly brutto salary (without bonus and stocks) in EUR")
     plt.savefig('payage.png', bbox_inches='tight')
@@ -109,7 +120,7 @@ def pay():
             x = "15+"
         """
         return x
-    
+
     def lambda_experience_sort(x):
         try:
             x = int(x)
@@ -142,15 +153,18 @@ def pay():
     paydata = paydata[(paydata['Total years of experience'] != -1) & (paydata['Total years of experience'] < p099)]
     paydata = paydata.sort_values(by='Total years of experience', ascending=True)
     paydata['Total years of experience'] = paydata['Total years of experience'].apply(lambda_experience)
-    plt.figure(figsize=(15,8)) 
-    sns.scatterplot(data=paydata, x="Total years of experience", y="Yearly brutto salary (without bonus and stocks) in EUR")
+    plt.figure(figsize=(15, 8))
+    sns.scatterplot(data=paydata, x="Total years of experience",
+                    y="Yearly brutto salary (without bonus and stocks) in EUR")
     plt.xlabel("Total years of experience")
     plt.ylabel("Yearly brutto salary (without bonus and stocks) in EUR")
     plt.savefig('expsalary.png', bbox_inches='tight')
 
+
 def technology():
-    plt.figure(figsize=(15,8))
-    sns.countplot(x=data['Your main technology / programming language'], order=data['Your main technology / programming language'].value_counts().iloc[:15].index)
+    plt.figure(figsize=(15, 8))
+    sns.countplot(x=data['Your main technology / programming language'],
+                  order=data['Your main technology / programming language'].value_counts().iloc[:15].index)
     plt.xlabel("Main technology")
     plt.ylabel("Count")
     plt.savefig('technology.png', bbox_inches='tight')
@@ -165,40 +179,43 @@ def spreadout():
 def lowerupper(column, given_data):
     Q1 = given_data[column].quantile(0.25)
     Q3 = given_data[column].quantile(0.75)
-    IQR = Q3 - Q1 # diff between lowest 25% and top 75%
+    IQR = Q3 - Q1  # diff between lowest 25% and top 75%
 
     upper_limit = Q3 + 1.5 * IQR  # multiply that difference by 1.5 and add to the upper limit
     lower_limit = Q1 - 1.5 * IQR  # same for low limit, but substract instead
     return lower_limit, upper_limit
 
+
 def printoutliers(column, given_data=data):
     lower_limit, upper_limit = lowerupper(column, given_data)
     outliers_c = given_data[column][given_data[column] < lower_limit].count()
     outliers_c += given_data[column][given_data[column] > upper_limit].count()
-    print("Odlehle hodnoty u " + column + ":" ,outliers_c)
+    print("Odlehle hodnoty u " + column + ":", outliers_c)
+
 
 def print_edit_data(column, func):
     tmp = data
-    tmp[column] = tmp[column].apply(func) # convert to int
-    tmp = tmp[tmp[column] != -42] # remove invalid values
+    tmp[column] = tmp[column].apply(func)  # convert to int
+    tmp = tmp[tmp[column] != None]  # remove invalid values
     print(tmp[column].describe())
     print(tmp[column].median())
     printoutliers(column, given_data=tmp)
 
+
 def outliers():
     printoutliers("Age")
     printoutliers("Yearly brutto salary (without bonus and stocks) in EUR")
-    printoutliers("Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country")
+    printoutliers(
+        "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country")
     printoutliers("Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week")
-    
-        
+
     ## look numerical, arent really -- need to convert them  first
 
     def tryInt(x):
         try:
             x = int(x)
         except:
-            x = -42 # random value
+            x = None  # random value
         return x
 
     print_edit_data('Total years of experience', tryInt)
@@ -207,11 +224,14 @@ def outliers():
     print_edit_data('Annual bonus+stocks one year ago. Only answer if staying in same country', tryInt)
     print_edit_data('Number of vacation days', tryInt)
 
+
 def missing():
     neccesary_data = data
-    neccesary_data= neccesary_data.drop(columns=["Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR", \
-        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week", "Annual bonus+stocks one year ago. Only answer if staying in same country",\
-            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"])
+    neccesary_data = neccesary_data.drop(columns=[
+        "Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR", \
+        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week",
+        "Annual bonus+stocks one year ago. Only answer if staying in same country", \
+        "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country"])
 
     print("Pocet radku s chybejici hodnotou:", neccesary_data.isnull().any(axis=1).sum())
     n_of_missing = neccesary_data.isnull().sum(axis=1).tolist()
@@ -220,23 +240,25 @@ def missing():
         if value > 1:
             empty_2_more += 1
     print("Pocet radku, kde chybi vic nez 1 hodnota:", empty_2_more)
-    	
+
     print(neccesary_data.isna().sum())
+
 
 def prep_corr(attr1, attr2):
     def tryInt(x):
         try:
             x = int(x)
         except:
-            x = -42 # random value
+            x = None  # random value
         return x
+
     tmp = data
     tmp[attr1] = tmp[attr1].apply(tryInt)
-    tmp = tmp[tmp[attr1] != -42] # remove invalid values
+    tmp = tmp[tmp[attr1] != None]  # remove invalid values
     tmp[attr2] = tmp[attr2].apply(tryInt)
-    tmp = tmp[tmp[attr2] != -42] # remove invalid values
+    tmp = tmp[tmp[attr2] != None]  # remove invalid values
 
-    print(attr1 + ",",attr2,(tmp[attr1].corr(tmp[attr2])))
+    print(attr1 + ",", attr2, (tmp[attr1].corr(tmp[attr2])))
 
 
 def correlate():
@@ -257,7 +279,6 @@ def correlate():
     prep_corr(yearlypay, kurzarbeit)
 
     prep_corr(yearlyyearago, kurzarbeit)
-
 
     prep_corr(age, totexp)
     prep_corr(age, germexp)
@@ -297,8 +318,50 @@ def correlate():
 
     prep_corr(yearlybonusyearback, vacation)
 
-#printValues()  # Prozkoumani atributu
-#spreadout()    # Grafy
-#outliers()     # Odlehle hodnoty, vychazi i z prozkoumani atributu
-#missing()      # Chybejici hodnoty
-correlate()     # Korelacni koeficienty
+
+# printValues()  # Prozkoumani atributu
+# spreadout()    # Grafy
+# outliers()     # Odlehle hodnoty, vychazi i z prozkoumani atributu
+# missing()      # Chybejici hodnoty
+correlate()  # Korelacni koeficienty
+
+
+
+def swap_columns(df, col1, col2):
+    col_list = list(df.columns)
+    x, y = col_list.index(col1), col_list.index(col2)
+    col_list[y], col_list[x] = col_list[x], col_list[y]
+    df = df[col_list]
+    return df
+def remove_unrelated_attributes():
+    data_filtered = data.drop(columns=["Timestamp", \
+                                       "Yearly bonus + stocks in EUR", \
+                                       "Annual bonus+stocks one year ago. Only answer if staying in same country", \
+                                       "Have you lost your job due to the coronavirus outbreak?", \
+                                       "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week", \
+                                       "Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR"])
+    data_filtered = swap_columns(data_filtered, "Age", "Yearly brutto salary (without bonus and stocks) in EUR")
+    data_filtered.to_csv("filtered_swaped.csv", index=True)
+
+
+    data_filled = handle_missing_values(data_filtered)
+
+    data_filled.to_csv("filtered_swaped_filled.csv", index=True)
+
+
+    # differences
+    pd.concat([data_filled, data_filtered]).drop_duplicates(keep=False)
+
+
+def handle_missing_values(df:DataFrame) -> DataFrame:
+
+    # To insert the mean value of each column into its missing rows:
+    #df.fillna(df.mean(numeric_only=True).round(1), inplace=True)
+    # For median:
+    df.fillna(df.median(numeric_only=True), inplace=True)
+    df.fillna("undefined", inplace=True)
+    return df
+
+
+if __name__ == "__main__":
+    remove_unrelated_attributes()
