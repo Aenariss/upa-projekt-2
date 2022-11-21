@@ -7,6 +7,7 @@ from fuzzywuzzy import process, fuzz
 
 data = pd.read_csv('./IT_Salary_Survey_EU _2020.csv').drop_duplicates()
 
+
 def printValues():
     print("Pohlavi:\n", data["Gender"].describe())
     print("Vek:\n", data["Age"].describe())
@@ -58,7 +59,7 @@ def pay():
     lower_limit = p01 - 1.5 * diff  # same for low limit, but substract instead
 
     paydata = data[(data['Yearly brutto salary (without bonus and stocks) in EUR'] > lower_limit) & (
-                data['Yearly brutto salary (without bonus and stocks) in EUR'] < upper_limit)]
+            data['Yearly brutto salary (without bonus and stocks) in EUR'] < upper_limit)]
     plt.hist(paydata['Yearly brutto salary (without bonus and stocks) in EUR'], bins=20, rwidth=0.9)
     plt.xlabel('Yearly brutto salary (without bonuses) in EUR')
     plt.ylabel("Number of responses")
@@ -326,7 +327,6 @@ def correlate():
 correlate()  # Korelacni koeficienty
 
 
-
 def swap_columns(df, col1, col2):
     col_list = list(df.columns)
     x, y = col_list.index(col1), col_list.index(col2)
@@ -334,7 +334,8 @@ def swap_columns(df, col1, col2):
     df = df[col_list]
     return df
 
-def remove_unrelated_attributes():
+
+def remove_unrelated_attributes() -> DataFrame:
     data_filtered = data.drop(columns=["Timestamp", \
                                        "Yearly bonus + stocks in EUR", \
                                        "Annual bonus+stocks one year ago. Only answer if staying in same country", \
@@ -342,77 +343,100 @@ def remove_unrelated_attributes():
                                        "Have you been forced to have a shorter working week (Kurzarbeit)? If yes, how many hours per week", \
                                        "Have you received additional monetary support from your employer due to Work From Home? If yes, how much in 2020 in EUR"])
     data_filtered = swap_columns(data_filtered, "Age", "Yearly brutto salary (without bonus and stocks) in EUR")
-    data_filtered.to_csv("filtered_swaped.csv", index=True)
+    #data_filtered.to_csv("filtered_swaped.csv", index=True)
+    return data_filtered
 
-
-    data_filled = handle_missing_values(data_filtered)
-
-    data_filled.to_csv("filtered_swaped_filled.csv", index=True)
-
-    data_outlier = outliers(data_filled)
-
-    data_outlier.to_csv("data_outlier.csv", index=True)
-
-    data_discretization = discretization(data_outlier)
-
-    data_discretization.to_csv("data_disc.csv", index=True)
-
-    data_categories = transform_categories(data_outlier)
-
-    data_categories.to_csv("data_category.csv", index=True)
-
-    data_positions = handle_position_strings(data_categories)
-
-    data_positions.to_csv("data_positions.csv", index=True)
-
-    data_technologies = handle_technologies_strings(data_categories,"Your main technology / programming language")
-
-    data_technologies.to_csv("data_technologies.csv", index=True)
-
-    data_other_technologies = handle_technologies_strings(data_technologies,"Other technologies/programming languages you use often")
-
-    data_other_technologies.to_csv("data_other_technologies.csv", index=True)
-
-
-def handle_missing_values(df:DataFrame) -> DataFrame:
-
-    # To insert the mean value of each column into its missing rows:
-    #df.fillna(df.mean(numeric_only=True).round(1), inplace=True)
-    # For median:
+def handle_missing_values(df: DataFrame) -> DataFrame:
+    # Convert DataFrame column from string to float
+    df["Number of vacation days"] = pd.to_numeric(df["Number of vacation days"], downcast="float", errors='coerce')
     df.fillna(df.median(numeric_only=True), inplace=True)
     df.fillna("undefined", inplace=True)
     return df
 
-def outliers(df:DataFrame) -> DataFrame:
-    cols = ["Age","Yearly brutto salary (without bonus and stocks) in EUR",\
-            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country",\
-            "Total years of experience","Years of experience in Germany"]
+
+def outliers(df: DataFrame) -> DataFrame:
+    cols = ["Age", "Yearly brutto salary (without bonus and stocks) in EUR", \
+            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country", \
+            "Total years of experience", "Years of experience in Germany"]
     for x in cols:
         q_low = df[x].quantile(0.01)
         q_hi = df[x].quantile(0.99)
         df = df[(df[x] < q_hi) & (df[x] > q_low)]
     return df
 
-def discretization(df:DataFrame) -> DataFrame:
-    cols = ["Age","Yearly brutto salary (without bonus and stocks) in EUR",\
-            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country",\
-            "Total years of experience","Years of experience in Germany"]
+
+def discretization(df: DataFrame) -> DataFrame:
+    cols = ["Age", "Yearly brutto salary (without bonus and stocks) in EUR", \
+            "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country", \
+            "Total years of experience", "Years of experience in Germany", "Number of vacation days"]
     for x in cols:
         high = np.amax(df[x])
         low = np.amin(df[x])
-        bins = np.array_split(np.arange(low,high),5)
-        bins = [x[0]-0.01 for x in bins] + [high]
-        df[x]=pd.cut(x=df[x], bins=bins, 
-                                labels=["very low", "low", "medium","high","very high"])
+        bins = np.array_split(np.arange(low, high), 5)
+        bins = [x[0] - 0.01 for x in bins] + [high]
+        df[x] = pd.cut(x=df[x], bins=bins,
+                       labels=["very low", "low", "medium", "high", "very high"])
     return df
 
-def transform_categories(df:DataFrame) -> DataFrame:
+
+def transform_categories(df: DataFrame) -> DataFrame:
     df["Company size"].str.strip()
-    df["Company size"] = df["Company size"].str.replace("up to 10","very small")
-    df["Company size"] = df["Company size"].str.replace("11-50","small")
-    df["Company size"] = df["Company size"].str.replace("51-100","medium")
-    df["Company size"] = df["Company size"].str.replace("101-1000","large")
-    df["Company size"] = df["Company size"].str.replace("1000+","very large", regex=False)
+    df["Company size"] = df["Company size"].str.replace("up to 10", "very small")
+    df["Company size"] = df["Company size"].str.replace("11-50", "small")
+    df["Company size"] = df["Company size"].str.replace("51-100", "medium")
+    df["Company size"] = df["Company size"].str.replace("101-1000", "large")
+    df["Company size"] = df["Company size"].str.replace("1000+", "very large", regex=False)
+    return df
+
+
+def handle_company_type(df: DataFrame) -> DataFrame:
+    types = ["undefined", "startup", "Product", "media", "consulting", "commercial", "construction", "university", "ecommerce", "research"]
+    new_col = []
+    for value in df["Company type"]:
+        value = str(value)
+        if value:
+            matches = process.extract(value, types, scorer=fuzz.token_sort_ratio)
+            match_r = matches[0][1]
+            if match_r < 50:
+                value = "undefined"
+            else:
+                value = matches[0][0]
+            new_col.append(value)
+    df["Company type"] = new_col
+    return df
+
+
+def hande_employment_status(df: DataFrame) -> DataFrame:
+    statuses = ["full time", "part time", "freelancer ", "unlimited", "limited", "undefined"]
+    new_col = []
+    for value in df["Employment status"]:
+        value = str(value)
+        if value:
+            matches = process.extract(value, statuses, scorer=fuzz.token_sort_ratio)
+            match_r = matches[0][1]
+            if match_r < 50:
+                value = "undefined"
+            else:
+                value = matches[0][0]
+            new_col.append(value)
+    df["Employment status"] = new_col
+    return df
+
+
+def hande_contract_duration(df: DataFrame) -> DataFrame:
+    statuses = ["unlimited", "limited", "undefined"]
+    new_col = []
+    for value in df["Сontract duration"]:
+        value = str(value)
+        if value:
+            matches = process.extract(value, statuses, scorer=fuzz.token_sort_ratio)
+            match_r = matches[0][1]
+            if match_r < 50:
+                value = "undefined"
+            else:
+                value = matches[0][0]
+            new_col.append(value)
+    df["Сontract duration"] = new_col
     return df
 
 def handle_position_strings(df: DataFrame) -> DataFrame:
@@ -454,5 +478,54 @@ def handle_technologies_strings(df: DataFrame, col) -> DataFrame:
     df[col] = new_col
     return df
 
+def prepare_data_set() -> DataFrame:
+    output = remove_unrelated_attributes()
+
+    data_filled = handle_missing_values(output)
+
+    data_outlier = outliers(data_filled)
+
+    #data_outlier.to_csv("data_outlier.csv", index=True)
+
+    data_discretization = discretization(data_outlier)
+
+    #data_discretization.to_csv("data_disc.csv", index=True)
+
+    data_categories = transform_categories(data_outlier)
+
+    #data_categories.to_csv("data_category.csv", index=True)
+
+    data_positions = handle_position_strings(data_categories)
+
+    #data_positions.to_csv("data_positions.csv", index=True)
+
+    data_employment = hande_employment_status(data_positions)
+
+    #data_employment.to_csv("data_employment.csv", index=True)
+
+    data_contracts = hande_contract_duration(data_employment)
+
+    #data_contracts.to_csv("data_contracts.csv", index=True)
+
+    data_companies = handle_company_type(data_contracts)
+
+    #data_companies.to_csv("data_companies.csv", index=True)
+
+    data_technologies = handle_technologies_strings(data_companies,"Your main technology / programming language")
+
+    #data_technologies.to_csv("data_technologies.csv", index=True)
+
+    data_other_technologies = handle_technologies_strings(data_technologies,"Other technologies/programming languages you use often")
+
+    #data_other_technologies.to_csv("data_other_technologies.csv", index=True)
+
+    final_output = data_other_technologies
+    final_output.to_csv("output.csv", index=True)
+
+    return final_output
+
+
 if __name__ == "__main__":
-    remove_unrelated_attributes()
+    prepare_data_set()
+
+
