@@ -101,25 +101,6 @@ def pay():
         x = str(x)
         if x == '-1':
             return "0"
-        # intervals by 2 years
-        """
-        if x < 3:
-            x = "0-2"
-        elif x < 5:
-            x = "3-4"
-        elif x < 7:
-            x = "5-6"
-        elif x < 9:
-            x = "7-8"
-        elif x < 11:
-            x = "9-10"
-        elif x < 13:
-            x = "11-12"
-        elif x < 15:
-            x = "13-14"
-        else:
-            x = "15+"
-        """
         return x
 
     def lambda_experience_sort(x):
@@ -127,25 +108,6 @@ def pay():
             x = int(x)
         except:
             return -1
-        # intervals by 2 years
-        """
-        if x < 3:
-            x = 2
-        elif x < 5:
-            x = 4
-        elif x < 7:
-            x = 6
-        elif x < 9:
-            x = 8
-        elif x < 11:
-            x = 10
-        elif x < 13:
-            x = 12
-        elif x < 15:
-            x = 14
-        else:
-            x = 15
-        """
         return x
 
     paydata['Total years of experience'] = paydata['Total years of experience'].apply(lambda_experience_sort)
@@ -320,13 +282,6 @@ def correlate():
     prep_corr(yearlybonusyearback, vacation)
 
 
-# printValues()  # Prozkoumani atributu
-# spreadout()    # Grafy
-# outliers()     # Odlehle hodnoty, vychazi i z prozkoumani atributu
-# missing()      # Chybejici hodnoty
-correlate()  # Korelacni koeficienty
-
-
 def swap_columns(df, col1, col2):
     col_list = list(df.columns)
     x, y = col_list.index(col1), col_list.index(col2)
@@ -335,8 +290,8 @@ def swap_columns(df, col1, col2):
     return df
 
 
-def remove_unrelated_attributes() -> DataFrame:
-    data_filtered = data.drop(columns=["Timestamp", \
+def remove_unrelated_attributes(df) -> DataFrame:
+    data_filtered = df.drop(columns=["Timestamp", \
                                        "Yearly bonus + stocks in EUR", \
                                        "Annual bonus+stocks one year ago. Only answer if staying in same country", \
                                        "Have you lost your job due to the coronavirus outbreak?", \
@@ -349,20 +304,20 @@ def remove_unrelated_attributes() -> DataFrame:
 
 def handle_missing_values(df: DataFrame) -> DataFrame:
     # Convert DataFrame column from string to float
+    # pridat prevod na cisla k ostatnim "numerickym"
     df["Number of vacation days"] = pd.to_numeric(df["Number of vacation days"], downcast="float", errors='coerce')
     df.fillna(df.median(numeric_only=True), inplace=True)
     df.fillna("undefined", inplace=True)
     return df
 
 
-def outliers(df: DataFrame) -> DataFrame:
+def outliers_d(df: DataFrame) -> DataFrame:
     cols = ["Age", "Yearly brutto salary (without bonus and stocks) in EUR", \
             "Annual brutto salary (without bonus and stocks) one year ago. Only answer if staying in the same country", \
-            "Total years of experience", "Years of experience in Germany"]
+            "Total years of experience", "Years of experience in Germany", "Number of vacation days"]
     for x in cols:
-        q_low = df[x].quantile(0.01)
-        q_hi = df[x].quantile(0.99)
-        df = df[(df[x] < q_hi) & (df[x] > q_low)]
+        lower, upper = lowerupper(x, df)
+        df = df[(df[x] < upper) & (df[x] > lower)]
     return df
 
 
@@ -489,11 +444,11 @@ def handle_technologies_strings(df: DataFrame, col) -> DataFrame:
 
 
 def prepare_data_set() -> DataFrame:
-    output = remove_unrelated_attributes()
+    output = remove_unrelated_attributes(data)
 
     data_filled = handle_missing_values(output)
 
-    data_outlier = outliers(data_filled)
+    data_outlier = outliers_d(data_filled)
 
     # data_outlier.to_csv("data_outlier.csv", index=True)
 
@@ -501,7 +456,7 @@ def prepare_data_set() -> DataFrame:
 
     # data_discretization.to_csv("data_disc.csv", index=True)
 
-    data_categories = transform_categories(data_outlier)
+    data_categories = transform_categories(data_discretization)
 
     # data_categories.to_csv("data_category.csv", index=True)
 
@@ -531,26 +486,43 @@ def prepare_data_set() -> DataFrame:
     # data_other_technologies.to_csv("data_other_technologies.csv", index=True)
 
     final_output = data_other_technologies
-    final_output.to_csv("output.csv", index=True)
-
-    return final_output
+    final_output.to_csv("numeric_transformed.csv", index=False)
 
 
-def categorization_data_transformation(df: DataFrame) -> DataFrame:
-    for column in df:
-        unique_values = df[column].unique()
-        for v, k in enumerate(unique_values):
-            if type(k) is str:
-                if k == "undefinded":
-                    v = "-1"
-
-                df[column] = df[column].str.replace(k, str(v), regex=False)
-
+def numerize(df):
+    df["Number of vacation days"] = pd.to_numeric(df["Number of vacation days"], downcast="float", errors='coerce')
+    df["Total years of experience"] = pd.to_numeric(df["Total years of experience"], downcast="float", errors='coerce')
+    df["Years of experience in Germany"] = pd.to_numeric(df["Years of experience in Germany"], downcast="float", errors='coerce')
+    df.fillna(df.median(numeric_only=True), inplace=True)
+    df.fillna("undefined", inplace=True)
     return df
+
+def categoric_data_transformation():
+
+    df = data
+    df = remove_unrelated_attributes(df)
+    df = df.drop(columns=['City'])
+    df = outliers_d(numerize(df))
+    df = handle_position_strings(df)
+    df = hande_employment_status(df)
+    df = hande_contract_duration(df)
+    df = handle_company_type(df)
+    df = handle_technologies_strings(df, "Your main technology / programming language")
+    df = handle_technologies_strings(df, "Other technologies/programming languages you use often")
+
+    df = pd.get_dummies(df, columns=["Gender", "Position ", "Seniority level", "Your main technology / programming language",\
+                                     "Other technologies/programming languages you use often", "Employment status", "Сontract duration",\
+                                     "Main language at work", "Company type"])
+
+
+    df.to_csv("categoric_transformed.csv", index=False)
 
 
 if __name__ == "__main__":
-    df = prepare_data_set()
-    df = categorization_data_transformation(df)
-
-    df.to_csv("categorized.csv", index=True)
+    printValues()  # Prozkoumani atributu
+    spreadout()    # Grafy
+    outliers()     # Odlehle hodnoty, vychazi i z prozkoumani atributu
+    missing()      # Chybejici hodnoty
+    correlate()  # Korelacni koeficienty
+    prepare_data_set()  # transformace numerickych na kategoricke
+    categoric_data_transformation() # kategoricke na numericke
