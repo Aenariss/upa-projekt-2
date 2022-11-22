@@ -1,3 +1,12 @@
+## UPA Projekt 2 ##
+###################
+### Analyza dat ###
+###################
+# Autori: 
+# Vojtech Fiala <xfiala61@stud.fit.vutbr.cz>
+# Vojtech Giesl <xgiesl00@stud.fit.vutbr.cz>
+# Vojtech Kronika <xkroni01@stud.fit.vutbr.cz>
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,6 +67,7 @@ def pay():
     upper_limit = p09 + 1.5 * diff  # multiply that difference by 1.5 and add to the upper limit
     lower_limit = p01 - 1.5 * diff  # same for low limit, but substract instead
 
+    plt.figure(figsize=(15, 8))
     paydata = data[(data['Yearly brutto salary (without bonus and stocks) in EUR'] > lower_limit) & (
             data['Yearly brutto salary (without bonus and stocks) in EUR'] < upper_limit)]
     plt.hist(paydata['Yearly brutto salary (without bonus and stocks) in EUR'], bins=20, rwidth=0.9)
@@ -523,6 +533,6 @@ if __name__ == "__main__":
     spreadout()    # Grafy
     outliers()     # Odlehle hodnoty, vychazi i z prozkoumani atributu
     missing()      # Chybejici hodnoty
-    correlate()  # Korelacni koeficienty
+    correlate()    # Korelacni koeficienty
     prepare_data_set()  # transformace numerickych na kategoricke
     categoric_data_transformation() # kategoricke na numericke
